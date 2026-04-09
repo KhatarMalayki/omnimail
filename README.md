@@ -1,72 +1,72 @@
 # OmniMail
 
-OmniMail is a professional-grade, cross-platform desktop email client inspired by eM Client. Built with an offline-first philosophy, it provides a highly secure, modern, and high-performance experience for managing your digital communication.
+OmniMail adalah klien email desktop lintas platform tingkat profesional yang terinspirasi oleh eM Client. Dibangun dengan filosofi offline-first, OmniMail menyediakan pengalaman yang sangat aman, modern, dan berkinerja tinggi untuk mengelola komunikasi digital Anda.
 
-## 🚀 Tech Stack
+## 🚀 Tumpukan Teknologi
 
-- **Framework**: [Electron](https://www.electronjs.org/) + [React](https://react.dev/) (Vite) + [TypeScript](https://www.typescriptlang.org/)
-- **Database**: [SQLite](https://www.sqlite.org/) ([Better-SQLite3](https://github.com/WiseLibs/better-sqlite3)) for indexing and local email storage
-- **Networking**: 
+- **Kerangka Kerja**: [Electron](https://www.electronjs.org/) + [React](https://react.dev/) (Vite) + [TypeScript](https://www.typescriptlang.org/)
+- **Basis Data**: [SQLite](https://www.sqlite.org/) ([Better-SQLite3](https://github.com/WiseLibs/better-sqlite3)) untuk pengindeksan dan penyimpanan email lokal
+- **Jaringan**: 
   - [imapflow](https://imapflow.com/) (IMAP)
   - [poplib](https://github.com/ditesh/node-poplib) (POP3)
-  - [mailparser](https://github.com/nodemailer/mailparser) (MIME parsing)
+  - [mailparser](https://github.com/nodemailer/mailparser) (parsing MIME)
   - [nodemailer](https://nodemailer.com/) (SMTP)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + [Lucide React Icons](https://lucide.dev/)
+- **Gaya**: [Tailwind CSS](https://tailwindcss.com/) + [Lucide React Icons](https://lucide.dev/)
 
-## 🗺️ Development Roadmap
+## 🗺️ Peta Jalan Pengembangan
 
-### 🟢 Milestone 1: Initialization (Done)
-- [x] Project scaffolding with Electron + React + Vite + TypeScript.
-- [x] SQLite database schema implementation for offline-first storage.
-- [x] Folder structure and secure IPC bridge setup.
-- [x] Initial documentation and GitHub repository setup.
+### 🟢 Tonggak Sejarah 1: Inisialisasi (Selesai)
+- [x] Perancah proyek dengan Electron + React + Vite + TypeScript.
+- [x] Implementasi skema basis data SQLite untuk penyimpanan offline-first.
+- [x] Struktur folder dan pengaturan jembatan IPC yang aman.
+- [x] Dokumentasi awal dan pengaturan repositori GitHub.
 
-### 🟡 Milestone 2: Multi-Protocol Engine (Pending)
-- [ ] IMAP full folder sync with IDLE support.
-- [ ] POP3 "Download & Delete" / "Leave copy" logic.
-- [ ] SMTP secure outgoing mail handler.
-- [ ] Incremental sync (headers first, body on-demand).
+### 🟡 Tonggak Sejarah 2: Mesin Multi-Protokol (Tertunda)
+- [ ] Sinkronisasi folder penuh IMAP dengan dukungan IDLE.
+- [ ] Logika POP3 "Unduh & Hapus" / "Biarkan salinan di server".
+- [ ] Penanganan email keluar SMTP yang aman.
+- [ ] Sinkronisasi inkremental (header terlebih dahulu, badan email sesuai permintaan).
 
-### 🟡 Milestone 3: UI/UX (3-Pane Layout) (Pending)
-- [ ] Folder & Account navigation (Pane 1).
-- [ ] Scrollable Email List with snippets (Pane 2).
-- [ ] Sandboxed iframe Reading Pane (Pane 3).
+### 🟡 Tonggak Sejarah 3: UI/UX (Tata Letak 3 Panel) (Tertunda)
+- [ ] Navigasi Folder & Akun (Panel 1).
+- [ ] Daftar Email yang dapat digulir dengan cuplikan (Panel 2).
+- [ ] Panel Baca iframe yang di-sandbox untuk rendering HTML yang aman (Panel 3).
 
-### 🟡 Milestone 4: Security & Search (Pending)
-- [ ] Full-text search across local cache.
-- [ ] Secure credential storage.
-- [ ] Attachment management and local caching.
+### 🟡 Tonggak Sejarah 4: Keamanan & Pencarian (Tertunda)
+- [ ] Pencarian teks lengkap di seluruh cache lokal.
+- [ ] Penyimpanan kredensial yang aman.
+- [ ] Manajemen lampiran dan caching lokal.
 
-## 🛠️ Setup Instructions
+## 🛠️ Petunjuk Penyiapan
 
-### Prerequisites
-- Node.js (v18 or later)
-- pnpm (recommended) or npm
+### Prasyarat
+- Node.js (v18 atau lebih baru)
+- pnpm (direkomendasikan) atau npm
 
-### Installation
+### Instalasi
 ```bash
-# Clone the repository
+# Kloning repositori
 git clone https://github.com/KhatarMalayki/Dwirusdianto.git OmniMail
 cd OmniMail
 
-# Install dependencies
+# Instal dependensi
 pnpm install
 ```
 
-### Development
+### Pengembangan
 ```bash
-# Run the application in development mode
+# Jalankan aplikasi dalam mode pengembangan
 pnpm run dev
 ```
 
 ### Build
 ```bash
-# Build the application for production
+# Bangun aplikasi untuk produksi
 pnpm run build
 ```
 
-## 🔒 Security
-OmniMail uses a secure IPC bridge between the Electron Main process and the Renderer. All protocol logic and sensitive credentials remain in the Main process, isolated from the UI layer. HTML emails are rendered in a sandboxed iframe to prevent script execution and cross-site tracking.
+## 🔒 Keamanan
+OmniMail menggunakan jembatan IPC yang aman antara proses Utama Electron dan Renderer. Semua logika protokol dan kredensial sensitif tetap berada di proses Utama, terisolasi dari lapisan UI. Email HTML dirender dalam iframe yang di-sandbox untuk mencegah eksekusi skrip dan pelacakan lintas situs.
 
 ---
-*Created by OmniMail Team*
+*Dibuat oleh Tim OmniMail*
