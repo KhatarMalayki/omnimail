@@ -39,6 +39,13 @@ OmniMail adalah klien email desktop lintas platform tingkat profesional yang ter
 - [x] UI Pencarian Global dengan hasil waktu nyata.
 - [x] Daftar lampiran dan integrasi pembukaan file lokal di Reader View.
 
+### 🟢 Tonggak Sejarah 5: Kesiapan Produksi & Distribusi (Selesai)
+- [x] Penanganan Kesalahan Global & Optimasi Performa (Indeks DB & Pragmas).
+- [x] UI Manajemen Multi-Akun tingkat lanjut.
+- [x] Notifikasi Native untuk email baru dengan integrasi IMAP IDLE.
+- [x] Modal Pengaturan & Preferensi (Tema, Notifikasi, Interval Sinkronisasi).
+- [x] Konfigurasi Pengemasan (electron-builder) & Auto-Updater untuk Win/Mac/Linux.
+
 ## 🛠️ Petunjuk Penyiapan
 
 ### Prasyarat
@@ -65,6 +72,9 @@ pnpm run dev
 ```bash
 # Bangun aplikasi untuk produksi
 pnpm run build
+
+# Buat paket distribusi
+pnpm run dist
 ```
 
 ## 🔒 Keamanan
