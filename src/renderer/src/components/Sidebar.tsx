@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, Plus, Trash2, Search } from 'lucide-react';
+import { AccountModal } from './AccountModal';
 
 interface Account {
   id: number;
@@ -26,6 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSelectFolder, onSearch }) =>
   const [expandedAccounts, setExpandedAccounts] = useState<Set<number>>(new Set());
   const [selectedFolder, setSelectedFolder] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   useEffect(() => {
     loadAccounts();
@@ -60,7 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSelectFolder, onSearch }) =>
   };
 
   const handleDeleteAccount = async (accountId: number) => {
-    if (confirm('Delete this account?')) {
+    if (confirm('Are you sure you want to delete this account and all its local data?')) {
       await (window as any).api.deleteAccount(accountId);
       loadAccounts();
     }
@@ -84,56 +86,82 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSelectFolder, onSearch }) =>
             placeholder="Search emails..."
             value={searchQuery}
             onChange={handleSearchChange}
-            className="w-full bg-gray-800 text-sm pl-10 pr-4 py-2 rounded border border-gray-700 focus:outline-none focus:border-blue-500"
+            className="w-full bg-gray-800 text-sm pl-10 pr-4 py-2 rounded border border-gray-700 focus:outline-none focus:border-blue-500 transition-colors"
           />
         </div>
-        <button className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+        <button 
+          onClick={() => setIsAccountModalOpen(true)}
+          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm font-medium transition-colors"
+        >
           <Plus size={16} />
           Add Account
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {accounts.map((account) => (
-          <div key={account.id} className="border-b border-gray-700">
-            <div className="flex items-center justify-between p-3 hover:bg-gray-800 cursor-pointer" onClick={() => toggleAccount(account.id)}>
-              <div className="flex items-center gap-2 flex-1">
-                <ChevronDown size={16} className={`transition-transform ${expandedAccounts.has(account.id) ? '' : '-rotate-90'}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-xs truncate">{account.email}</div>
-                  <div className="text-[10px] text-gray-400">{account.protocol}</div>
-                </div>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteAccount(account.id);
-                }}
-                className="p-1 hover:bg-red-600 rounded"
-              >
-                <Trash2 size={12} />
-              </button>
-            </div>
-
-            {expandedAccounts.has(account.id) && (
-              <div className="bg-gray-800">
-                {(folders[account.id] || []).map((folder) => (
-                  <div
-                    key={folder.id}
-                    onClick={() => handleSelectFolder(folder.id, account.id, folder.path)}
-                    className={`px-6 py-2 text-xs cursor-pointer flex justify-between items-center ${
-                      selectedFolder === folder.id ? 'bg-blue-600' : 'hover:bg-gray-700'
-                    }`}
-                  >
-                    <span>{folder.name}</span>
-                    {folder.unread_count > 0 && <span className="bg-red-500 text-[10px] px-1.5 py-0.5 rounded-full">{folder.unread_count}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        {accounts.length === 0 ? (
+          <div className="p-8 text-center text-gray-500 text-xs">
+            No accounts added yet.
           </div>
-        ))}
+        ) : (
+          accounts.map((account) => (
+            <div key={account.id} className="border-b border-gray-800">
+              <div 
+                className="flex items-center justify-between p-3 hover:bg-gray-800 cursor-pointer group transition-colors" 
+                onClick={() => toggleAccount(account.id)}
+              >
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <ChevronDown 
+                    size={16} 
+                    className={`text-gray-400 transition-transform duration-200 ${expandedAccounts.has(account.id) ? '' : '-rotate-90'}`} 
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-xs truncate text-gray-200">{account.email}</div>
+                    <div className="text-[10px] text-gray-500">{account.protocol}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteAccount(account.id);
+                  }}
+                  className="p-1.5 hover:bg-red-600 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Delete Account"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+
+              {expandedAccounts.has(account.id) && (
+                <div className="bg-gray-800/50 py-1">
+                  {(folders[account.id] || []).map((folder) => (
+                    <div
+                      key={folder.id}
+                      onClick={() => handleSelectFolder(folder.id, account.id, folder.path)}
+                      className={`px-8 py-2 text-xs cursor-pointer flex justify-between items-center transition-colors ${
+                        selectedFolder === folder.id ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-700 hover:text-gray-200'
+                      }`}
+                    >
+                      <span className="truncate">{folder.name}</span>
+                      {folder.unread_count > 0 && (
+                        <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                          {folder.unread_count}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
+
+      <AccountModal 
+        isOpen={isAccountModalOpen} 
+        onClose={() => setIsAccountModalOpen(false)} 
+        onAdded={loadAccounts} 
+      />
     </div>
   );
 };
