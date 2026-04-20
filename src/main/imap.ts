@@ -4,6 +4,18 @@ import { safeStorage } from 'electron';
 import db from './db';
 import { saveAttachmentLocally } from './attachments';
 
+async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return withRetry(operation, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
 function getDecryptedAccount(accountId: number) {
   const account = db.prepare('SELECT * FROM accounts WHERE id = ?').get(accountId) as any;
   if (!account) throw new Error('Account not found');
@@ -32,18 +44,18 @@ export async function syncImapFolders(accountId: number) {
     logger: false
   });
 
-  await client.connect();
+  await withRetry(() => client.connect());
   try {
     const list = await client.list();
     for (const folder of list) {
-      const result = db.prepare(\`
+      const result = db.prepare(`
         INSERT INTO folders (account_id, name, path, attributes)
         VALUES (?, ?, ?, ?)
         ON CONFLICT(account_id, path) DO UPDATE SET
           name = excluded.name,
           attributes = excluded.attributes
         RETURNING id
-      \`).get(
+      `).get(
         accountId,
         folder.name,
         folder.path,
@@ -67,10 +79,10 @@ export async function startIdle(accountId: number, folderPath: string) {
     logger: false
   });
 
-  await client.connect();
+  await withRetry(() => client.connect());
   const lock = await client.getMailboxLock(folderPath);
   
-  client.on('exists', async (data) => {
+  client.on('exists', async () => {
     const folder = db.prepare('SELECT id FROM folders WHERE account_id = ? AND path = ?').get(accountId, folderPath) as { id: number };
     if (folder) {
       await syncImapMessages(client, folder.id, folderPath);
@@ -90,14 +102,14 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
       size: true,
       envelope: true
     })) {
-      db.prepare(\`
+      db.prepare(`
         INSERT INTO messages (
           folder_id, uid, message_id, subject, from_name, from_address,
           to_address, date, is_read, size
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(folder_id, uid) DO UPDATE SET
           is_read = excluded.is_read
-      \`).run(
+      `).run(
         folderId,
         msg.uid,
         msg.envelope.messageId,
@@ -106,7 +118,7 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
         msg.envelope.from[0]?.address,
         msg.envelope.to[0]?.address,
         msg.envelope.date?.toISOString(),
-        msg.flags.has('\\\\Seen') ? 1 : 0,
+        msg.flags.has('\\Seen') ? 1 : 0,
         msg.size
       );
     }
@@ -125,7 +137,7 @@ export async function fetchMessageBody(accountId: number, folderPath: string, ui
     logger: false
   });
 
-  await client.connect();
+  await withRetry(() => client.connect());
   const lock = await client.getMailboxLock(folderPath);
   try {
     const msg = await client.fetchOne(uid.toString(), { source: true }, { uid: true });
@@ -137,13 +149,13 @@ export async function fetchMessageBody(accountId: number, folderPath: string, ui
       
       if (dbMsg) {
         // Update body
-        db.prepare(\`
+        db.prepare(`
           UPDATE messages SET
             body_html = ?,
             body_text = ?,
             snippet = ?
           WHERE id = ?
-        \`).run(
+        `).run(
           parsed.html || '',
           parsed.text || '',
           parsed.textAsHtml?.substring(0, 100),
