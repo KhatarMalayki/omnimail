@@ -30,7 +30,7 @@ export async function sendEmail(accountId: number, to: string, subject: string, 
   });
 
   const info = await transporter.sendMail({
-    from: \`"\${account.display_name}" <\${account.email}>\`,
+    from: `"${account.display_name}" <${account.email}>`,
     to,
     subject,
     html: body

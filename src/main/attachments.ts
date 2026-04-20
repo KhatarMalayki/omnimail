@@ -41,10 +41,10 @@ export function saveAttachmentLocally(messageId: number, filename: string, conte
   const localPath = join(attachmentDir, filename);
   writeFileSync(localPath, content);
 
-  db.prepare(\`
+  db.prepare(`
     INSERT INTO attachments (message_id, filename, content_type, size, local_path)
     VALUES (?, ?, ?, ?, ?)
-  \`).run(messageId, filename, contentType, size, localPath);
+  `).run(messageId, filename, contentType, size, localPath);
 
   return localPath;
 }
