@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, dialog } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
+import { autoUpdater } from 'electron-updater';
 import { initDatabase } from './db';
 import { setupIpcHandlers } from './handlers';
 import icon from '../../resources/icon.png?asset';
@@ -47,6 +48,26 @@ function createWindow(): void {
   }
 }
 
+// Auto-updater events
+autoUpdater.on('update-available', () => {
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Update Available',
+    message: 'A new version of OmniMail is available. Downloading now...',
+  });
+});
+
+autoUpdater.on('update-downloaded', () => {
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Update Ready',
+    message: 'Install and restart now?',
+    buttons: ['Yes', 'Later']
+  }).then((result) => {
+    if (result.response === 0) autoUpdater.quitAndInstall();
+  });
+});
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -58,7 +79,7 @@ app.whenReady().then(() => {
   setupIpcHandlers();
 
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.omnimail');
+  electronApp.setAppUserModelId('com.omnimail.app');
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -68,6 +89,11 @@ app.whenReady().then(() => {
   });
 
   createWindow();
+
+  // Check for updates in production
+  if (!is.dev) {
+    autoUpdater.checkForUpdatesAndNotify();
+  }
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
