@@ -69,6 +69,38 @@ export function initDatabase() {
     )
   `);
 
+  // FTS5 Virtual Table for searching
+  db.exec(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
+      subject,
+      from_name,
+      from_address,
+      body_text,
+      content='messages',
+      content_rowid='id'
+    )
+  `);
+
+  // Triggers to keep FTS index in sync
+  db.exec(`
+    CREATE TRIGGER IF NOT EXISTS messages_ai AFTER INSERT ON messages BEGIN
+      INSERT INTO messages_fts(rowid, subject, from_name, from_address, body_text)
+      VALUES (new.id, new.subject, new.from_name, new.from_address, new.body_text);
+    END;
+    
+    CREATE TRIGGER IF NOT EXISTS messages_ad AFTER DELETE ON messages BEGIN
+      INSERT INTO messages_fts(messages_fts, rowid, subject, from_name, from_address, body_text)
+      VALUES('delete', old.id, old.subject, old.from_name, old.from_address, old.body_text);
+    END;
+    
+    CREATE TRIGGER IF NOT EXISTS messages_au AFTER UPDATE ON messages BEGIN
+      INSERT INTO messages_fts(messages_fts, rowid, subject, from_name, from_address, body_text)
+      VALUES('delete', old.id, old.subject, old.from_name, old.from_address, old.body_text);
+      INSERT INTO messages_fts(rowid, subject, from_name, from_address, body_text)
+      VALUES (new.id, new.subject, new.from_name, new.from_address, new.body_text);
+    END;
+  `);
+
   // Attachments table
   db.exec(`
     CREATE TABLE IF NOT EXISTS attachments (
@@ -95,7 +127,7 @@ export function initDatabase() {
     )
   `);
 
-  console.log('Database initialized at:', dbPath);
+  console.log('Database initialized with FTS5 at:', dbPath);
 }
 
 export default db;

@@ -14,10 +14,10 @@ export function setupIpcHandlers() {
       encryptedPassword = safeStorage.encryptString(data.password).toString('base64');
     }
 
-    const stmt = db.prepare(\`
+    const stmt = db.prepare(`
       INSERT INTO accounts (email, display_name, protocol, host, port, secure, username, password, smtp_host, smtp_port, smtp_secure)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    \`);
+    `);
     const result = stmt.run(
       data.email,
       data.displayName,
@@ -70,18 +70,21 @@ export function setupIpcHandlers() {
 
   // Messages
   ipcMain.handle('get-messages', (_, folderId, limit = 50, offset = 0) => {
-    return db.prepare(\`
+    return db.prepare(`
       SELECT * FROM messages WHERE folder_id = ? ORDER BY date DESC LIMIT ? OFFSET ?
-    \`).all(folderId, limit, offset);
+    `).all(folderId, limit, offset);
   });
 
   ipcMain.handle('search-messages', (_, query) => {
-    const searchTerm = `%${query}%`;
+    // Using FTS5 for advanced searching
+    // We join with the original messages table to get all required fields
     return db.prepare(` 
-      SELECT * FROM messages 
-      WHERE subject LIKE ? OR from_address LIKE ? OR body_text LIKE ? 
-      ORDER BY date DESC LIMIT 100
-    `).all(searchTerm, searchTerm, searchTerm);
+      SELECT m.* FROM messages m
+      JOIN messages_fts f ON m.id = f.rowid
+      WHERE messages_fts MATCH ?
+      ORDER BY rank
+      LIMIT 100
+    `).all(query);
   });
 
   ipcMain.handle('get-message', (_, messageId) => {
