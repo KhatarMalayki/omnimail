@@ -27,10 +27,10 @@ OmniMail adalah klien email desktop lintas platform tingkat profesional yang ter
 - [x] Penanganan email keluar SMTP yang aman.
 - [x] Sinkronisasi inkremental (header terlebih dahulu, badan email sesuai permintaan).
 
-### 🟡 Tonggak Sejarah 3: UI/UX (Tata Letak 3 Panel) (Tertunda)
-- [ ] Navigasi Folder & Akun (Panel 1).
-- [ ] Daftar Email yang dapat digulir dengan cuplikan (Panel 2).
-- [ ] Panel Baca iframe yang di-sandbox untuk rendering HTML yang aman (Panel 3).
+### 🟢 Tonggak Sejarah 3: UI/UX (Tata Letak 3 Panel) (Selesai)
+- [x] Navigasi Folder & Akun (Panel 1).
+- [x] Daftar Email yang dapat digulir dengan cuplikan (Panel 2).
+- [x] Panel Baca iframe yang di-sandbox untuk rendering HTML yang aman (Panel 3).
 
 ### 🟡 Tonggak Sejarah 4: Keamanan & Pencarian (Tertunda)
 - [ ] Pencarian teks lengkap di seluruh cache lokal.
