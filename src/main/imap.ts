@@ -3,6 +3,7 @@ import { simpleParser } from 'mailparser';
 import { safeStorage } from 'electron';
 import db from './db';
 import { saveAttachmentLocally } from './attachments';
+import { showNewEmailNotification } from './notifications';
 
 async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
   try {
@@ -85,7 +86,7 @@ export async function startIdle(accountId: number, folderPath: string) {
   client.on('exists', async () => {
     const folder = db.prepare('SELECT id FROM folders WHERE account_id = ? AND path = ?').get(accountId, folderPath) as { id: number };
     if (folder) {
-      await syncImapMessages(client, folder.id, folderPath);
+      await syncImapMessages(client, folder.id, folderPath, true);
     }
   });
 
@@ -93,7 +94,7 @@ export async function startIdle(accountId: number, folderPath: string) {
   return { client, lock };
 }
 
-async function syncImapMessages(client: ImapFlow, folderId: number, path: string) {
+async function syncImapMessages(client: ImapFlow, folderId: number, path: string, notify: boolean = false) {
   const lock = await client.getMailboxLock(path);
   try {
     for await (const msg of client.fetch('1:*', {
@@ -102,14 +103,15 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
       size: true,
       envelope: true
     })) {
-      db.prepare(`
+      const isNew = db.prepare(`
         INSERT INTO messages (
           folder_id, uid, message_id, subject, from_name, from_address,
           to_address, date, is_read, size
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(folder_id, uid) DO UPDATE SET
           is_read = excluded.is_read
-      `).run(
+        RETURNING id
+      `).get(
         folderId,
         msg.uid,
         msg.envelope.messageId,
@@ -120,7 +122,15 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
         msg.envelope.date?.toISOString(),
         msg.flags.has('\\Seen') ? 1 : 0,
         msg.size
-      );
+      ) as { id: number };
+
+      if (notify && isNew && !msg.flags.has('\\Seen')) {
+        showNewEmailNotification(
+          msg.envelope.subject || '(No Subject)',
+          msg.envelope.from[0]?.name || msg.envelope.from[0]?.address || 'Unknown',
+          isNew.id
+        );
+      }
     }
   } finally {
     lock.release();
