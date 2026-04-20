@@ -75,6 +75,15 @@ export function setupIpcHandlers() {
     \`).all(folderId, limit, offset);
   });
 
+  ipcMain.handle('search-messages', (_, query) => {
+    const searchTerm = `%${query}%`;
+    return db.prepare(` 
+      SELECT * FROM messages 
+      WHERE subject LIKE ? OR from_address LIKE ? OR body_text LIKE ? 
+      ORDER BY date DESC LIMIT 100
+    `).all(searchTerm, searchTerm, searchTerm);
+  });
+
   ipcMain.handle('get-message', (_, messageId) => {
     return db.prepare('SELECT * FROM messages WHERE id = ?').get(messageId);
   });

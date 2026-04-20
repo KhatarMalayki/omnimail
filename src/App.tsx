@@ -24,16 +24,28 @@ function App() {
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null)
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null)
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
+  const [searchResults, setSearchResults] = useState<Message[] | null>(null)
   const [isComposeOpen, setIsComposeOpen] = useState(false)
 
   const handleSelectFolder = (folderId: number, accountId: number, folderPath: string) => {
     setSelectedFolderId(folderId)
     setSelectedAccountId(accountId)
     setSelectedMessage(null)
+    setSearchResults(null)
   }
 
   const handleSelectMessage = (message: Message) => {
     setSelectedMessage(message)
+  }
+
+  const handleSearch = async (query: string) => {
+    if (query.trim().length > 2) {
+      const results = await (window as any).api.searchMessages(query);
+      setSearchResults(results);
+      setSelectedFolderId(null);
+    } else {
+      setSearchResults(null);
+    }
   }
 
   const handleComposeClick = () => {
@@ -48,8 +60,12 @@ function App() {
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar onSelectFolder={handleSelectFolder} />
-        <MessageList folderId={selectedFolderId} onSelectMessage={handleSelectMessage} />
+        <Sidebar onSelectFolder={handleSelectFolder} onSearch={handleSearch} />
+        <MessageList 
+          folderId={selectedFolderId} 
+          searchResults={searchResults} 
+          onSelectMessage={handleSelectMessage} 
+        />
         <ReaderView message={selectedMessage} onBack={() => setSelectedMessage(null)} onCompose={handleComposeClick} />
       </div>
 
@@ -58,7 +74,6 @@ function App() {
         isOpen={isComposeOpen}
         onClose={() => setIsComposeOpen(false)}
         onSent={() => {
-          // Refresh message list
           setSelectedMessage(null)
         }}
       />

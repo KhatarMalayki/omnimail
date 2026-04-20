@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Mail } from 'lucide-react';
+import { Star } from 'lucide-react';
 
 interface Message {
   id: number;
@@ -14,25 +14,30 @@ interface Message {
 
 interface MessageListProps {
   folderId: number | null;
-  onSelectMessage: (message: Message) => void;
+  searchResults: Message[] | null;
+  onSelectMessage: (message: any) => void;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ folderId, onSelectMessage }) => {
+export const MessageList: React.FC<MessageListProps> = ({ folderId, searchResults, onSelectMessage }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (folderId) {
+    if (searchResults) {
+      setMessages(searchResults);
+    } else if (folderId) {
       loadMessages();
+    } else {
+      setMessages([]);
     }
-  }, [folderId]);
+  }, [folderId, searchResults]);
 
   const loadMessages = async () => {
     if (!folderId) return;
     setLoading(true);
     try {
-      const data = await window.api.getMessages(folderId, 50, 0);
+      const data = await (window as any).api.getMessages(folderId, 50, 0);
       setMessages(data);
     } finally {
       setLoading(false);
@@ -43,7 +48,7 @@ export const MessageList: React.FC<MessageListProps> = ({ folderId, onSelectMess
     setSelectedMessageId(message.id);
     onSelectMessage(message);
     if (!message.is_read) {
-      window.api.markAsRead(message.id, true);
+      (window as any).api.markAsRead(message.id, true);
       setMessages((prev) =>
         prev.map((m) => (m.id === message.id ? { ...m, is_read: true } : m))
       );
@@ -52,13 +57,14 @@ export const MessageList: React.FC<MessageListProps> = ({ folderId, onSelectMess
 
   const toggleFlag = async (e: React.MouseEvent, messageId: number, isFlagged: boolean) => {
     e.stopPropagation();
-    await window.api.markAsFlagged(messageId, !isFlagged);
+    await (window as any).api.markAsFlagged(messageId, !isFlagged);
     setMessages((prev) =>
       prev.map((m) => (m.id === messageId ? { ...m, is_flagged: !isFlagged } : m))
     );
   };
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
     const date = new Date(dateStr);
     const today = new Date();
     if (date.toDateString() === today.toDateString()) {
@@ -69,8 +75,13 @@ export const MessageList: React.FC<MessageListProps> = ({ folderId, onSelectMess
 
   return (
     <div className="flex-1 flex flex-col bg-white border-r border-gray-200">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="font-semibold text-gray-800">Messages</h2>
+      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+        <h2 className="font-semibold text-gray-800">
+          {searchResults ? 'Search Results' : 'Messages'}
+        </h2>
+        {searchResults && (
+          <span className="text-xs text-gray-500">{messages.length} found</span>
+        )}
       </div>
 
       {loading ? (
@@ -91,18 +102,18 @@ export const MessageList: React.FC<MessageListProps> = ({ folderId, onSelectMess
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     {!message.is_read && <div className="w-2 h-2 bg-blue-600 rounded-full"></div>}
-                    <div className="font-semibold text-gray-800 truncate">{message.from_name || message.from_address}</div>
+                    <div className="font-semibold text-gray-800 truncate text-sm">{message.from_name || message.from_address}</div>
                   </div>
-                  <div className="text-sm text-gray-600 truncate mt-1">{message.subject}</div>
-                  <div className="text-xs text-gray-500 truncate mt-1">{message.snippet}</div>
+                  <div className="text-xs text-gray-600 truncate mt-1">{message.subject}</div>
+                  <div className="text-[10px] text-gray-500 truncate mt-1">{message.snippet}</div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs text-gray-500 whitespace-nowrap">{formatDate(message.date)}</span>
+                  <span className="text-[10px] text-gray-500 whitespace-nowrap">{formatDate(message.date)}</span>
                   <button
                     onClick={(e) => toggleFlag(e, message.id, message.is_flagged)}
                     className="p-1 hover:bg-gray-200 rounded"
                   >
-                    <Star size={16} className={message.is_flagged ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'} />
+                    <Star size={14} className={message.is_flagged ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'} />
                   </button>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, Search } from 'lucide-react';
 
 interface Account {
   id: number;
@@ -17,20 +17,22 @@ interface Folder {
 
 interface SidebarProps {
   onSelectFolder: (folderId: number, accountId: number, folderPath: string) => void;
+  onSearch: (query: string) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onSelectFolder }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onSelectFolder, onSearch }) => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [folders, setFolders] = useState<Record<number, Folder[]>>({});
   const [expandedAccounts, setExpandedAccounts] = useState<Set<number>>(new Set());
   const [selectedFolder, setSelectedFolder] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadAccounts();
   }, []);
 
   const loadAccounts = async () => {
-    const data = await window.api.getAccounts();
+    const data = await (window as any).api.getAccounts();
     setAccounts(data);
     for (const account of data) {
       loadFolders(account.id);
@@ -38,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSelectFolder }) => {
   };
 
   const loadFolders = async (accountId: number) => {
-    const data = await window.api.getFolders(accountId);
+    const data = await (window as any).api.getFolders(accountId);
     setFolders((prev) => ({ ...prev, [accountId]: data }));
   };
 
@@ -59,16 +61,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSelectFolder }) => {
 
   const handleDeleteAccount = async (accountId: number) => {
     if (confirm('Delete this account?')) {
-      await window.api.deleteAccount(accountId);
+      await (window as any).api.deleteAccount(accountId);
       loadAccounts();
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (query.length > 2) {
+      onSearch(query);
     }
   };
 
   return (
     <div className="w-64 bg-gray-900 text-white flex flex-col border-r border-gray-700">
-      <div className="p-4 border-b border-gray-700">
-        <button className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
-          <Plus size={18} />
+      <div className="p-4 space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+          <input
+            type="text"
+            placeholder="Search emails..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="w-full bg-gray-800 text-sm pl-10 pr-4 py-2 rounded border border-gray-700 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+        <button className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+          <Plus size={16} />
           Add Account
         </button>
       </div>
@@ -80,8 +100,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSelectFolder }) => {
               <div className="flex items-center gap-2 flex-1">
                 <ChevronDown size={16} className={`transition-transform ${expandedAccounts.has(account.id) ? '' : '-rotate-90'}`} />
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm truncate">{account.email}</div>
-                  <div className="text-xs text-gray-400">{account.protocol}</div>
+                  <div className="font-semibold text-xs truncate">{account.email}</div>
+                  <div className="text-[10px] text-gray-400">{account.protocol}</div>
                 </div>
               </div>
               <button
@@ -91,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSelectFolder }) => {
                 }}
                 className="p-1 hover:bg-red-600 rounded"
               >
-                <Trash2 size={14} />
+                <Trash2 size={12} />
               </button>
             </div>
 
@@ -101,12 +121,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onSelectFolder }) => {
                   <div
                     key={folder.id}
                     onClick={() => handleSelectFolder(folder.id, account.id, folder.path)}
-                    className={`px-6 py-2 text-sm cursor-pointer flex justify-between items-center ${
+                    className={`px-6 py-2 text-xs cursor-pointer flex justify-between items-center ${
                       selectedFolder === folder.id ? 'bg-blue-600' : 'hover:bg-gray-700'
                     }`}
                   >
                     <span>{folder.name}</span>
-                    {folder.unread_count > 0 && <span className="bg-red-500 text-xs px-2 py-1 rounded-full">{folder.unread_count}</span>}
+                    {folder.unread_count > 0 && <span className="bg-red-500 text-[10px] px-1.5 py-0.5 rounded-full">{folder.unread_count}</span>}
                   </div>
                 ))}
               </div>
