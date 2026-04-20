@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { initDatabase } from './db';
+import { setupIpcHandlers } from './handlers';
 import icon from '../../resources/icon.png?asset';
 
 function createWindow(): void {
@@ -43,6 +44,9 @@ app.whenReady().then(() => {
   // Initialize database
   initDatabase();
 
+  // Setup IPC handlers
+  setupIpcHandlers();
+
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.omnimail');
 
@@ -52,9 +56,6 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
   });
-
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'));
 
   createWindow();
 
