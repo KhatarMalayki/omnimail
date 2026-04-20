@@ -54,20 +54,20 @@ export async function syncPop3(accountId: number, keepCopy: boolean = true) {
       client.once('retr', async (status, msgnumber, data) => {
         if (status) {
           const parsed = await simpleParser(data);
-          const uid = parsed.messageId || \`pop3-\${accountId}-\${msgnumber}-\${parsed.date?.getTime()}\`;
+          const uid = parsed.messageId || `pop3-${accountId}-${msgnumber}-${parsed.date?.getTime()}`;
           
           const exists = db.prepare('SELECT 1 FROM pop3_uids WHERE account_id = ? AND uid = ?').get(accountId, uid);
           
           if (!exists) {
             const folder = db.prepare('SELECT id FROM folders WHERE account_id = ? AND name = "INBOX"').get(accountId) as { id: number };
-            const folderId = folder?.id || db.prepare('INSERT INTO folders (account_id, name, path) VALUES (?, "INBOX", "INBOX") RETURNING id').get(accountId).id;
+            const folderId = folder?.id || (db.prepare('INSERT INTO folders (account_id, name, path) VALUES (?, "INBOX", "INBOX") RETURNING id').get(accountId) as { id: number }).id;
 
-            db.prepare(\`
+            db.prepare(`
               INSERT INTO messages (
                 folder_id, uid, message_id, subject, from_name, from_address,
                 to_address, date, snippet, body_html, body_text, size
               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            \`).run(
+            `).run(
               folderId,
               msgnumber,
               parsed.messageId,
