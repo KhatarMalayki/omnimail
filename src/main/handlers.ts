@@ -1,6 +1,6 @@
 import { ipcMain, safeStorage } from 'electron';
 import db from './db';
-import { syncImapFolders, fetchMessageBody } from './imap';
+import { syncImapFolders, fetchMessageBody, startIdle } from './imap';
 import { syncPop3 } from './pop3';
 import { sendEmail } from './smtp';
 import { setupAttachmentHandlers } from './attachments';
@@ -120,11 +120,11 @@ export function setupIpcHandlers() {
 
   // IMAP IDLE
   ipcMain.handle('start-idle', async (_, accountId, folderPath) => {
-    // Placeholder for IDLE implementation
+    await startIdle(accountId, folderPath);
     return true;
   });
 
-  ipcMain.handle('stop-idle', (_, accountId) => {
+  ipcMain.handle('stop-idle', (_, _accountId) => {
     // Placeholder for IDLE stop
     return true;
   });
