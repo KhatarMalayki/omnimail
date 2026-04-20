@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { autoUpdater } from 'electron-updater';
 import { initDatabase } from './db';
 import { setupIpcHandlers } from './handlers';
+// @ts-ignore - icon asset import is handled by electron-vite
 import icon from '../../resources/icon.png?asset';
 
 // Global error handling for the main process

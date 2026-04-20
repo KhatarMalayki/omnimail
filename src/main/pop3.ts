@@ -1,5 +1,6 @@
+// @ts-ignore - poplib doesn't have types
 import POP3Client from 'poplib';
-import { simpleParser, AddressObject } from 'mailparser';
+import { simpleParser, type AddressObject } from 'mailparser';
 import { safeStorage } from 'electron';
 import db from './db';
 

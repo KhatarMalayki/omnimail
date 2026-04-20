@@ -103,8 +103,11 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
       size: true,
       envelope: true
     })) {
-      const from = msg.envelope.from && msg.envelope.from.length > 0 ? msg.envelope.from[0] : null;
-      const to = msg.envelope.to && msg.envelope.to.length > 0 ? msg.envelope.to[0] : null;
+      const envelope = msg.envelope;
+      if (!envelope) continue;
+
+      const from = envelope.from && envelope.from.length > 0 ? envelope.from[0] : null;
+      const to = envelope.to && envelope.to.length > 0 ? envelope.to[0] : null;
 
       const isNew = db.prepare(`
         INSERT INTO messages (
@@ -117,19 +120,19 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
       `).get(
         folderId,
         msg.uid,
-        msg.envelope.messageId,
-        msg.envelope.subject,
+        envelope.messageId,
+        envelope.subject,
         from?.name || '',
         from?.address || '',
         to?.address || '',
-        msg.envelope.date ? msg.envelope.date.toISOString() : new Date().toISOString(),
-        msg.flags.has('\\Seen') ? 1 : 0,
+        envelope.date ? envelope.date.toISOString() : new Date().toISOString(),
+        msg.flags?.has('\\Seen') ? 1 : 0,
         msg.size
       ) as { id: number };
 
-      if (notify && isNew && !msg.flags.has('\\Seen')) {
+      if (notify && isNew && msg.flags && !msg.flags.has('\\Seen')) {
         showNewEmailNotification(
-          msg.envelope.subject || '(No Subject)',
+          envelope.subject || '(No Subject)',
           from?.name || from?.address || 'Unknown',
           isNew.id
         );
