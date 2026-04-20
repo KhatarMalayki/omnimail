@@ -55,6 +55,9 @@
       "provider": "github",
       "owner": "KhatarMalayki",
       "repo": "omnimail"
+    },
+    "extraMetadata": {
+      "main": "out/main/index.js"
     }
   },
   "dependencies": {
