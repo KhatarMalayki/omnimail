@@ -2,6 +2,10 @@
   "name": "omnimail",
   "private": true,
   "version": "1.0.0",
+  "author": {
+    "name": "KhatarMalayki",
+    "email": "khatarmalayki@example.com"
+  },
   "type": "module",
   "main": "out/main/index.js",
   "scripts": {
