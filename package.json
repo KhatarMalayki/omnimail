@@ -2,6 +2,7 @@
   "name": "omnimail",
   "private": true,
   "version": "1.0.0",
+  "description": "A modern desktop email client built with Electron, React, and Tailwind CSS.",
   "author": {
     "name": "KhatarMalayki",
     "email": "khatarmalayki@example.com"
