@@ -21,11 +21,11 @@ OmniMail adalah klien email desktop lintas platform tingkat profesional yang ter
 - [x] Struktur folder dan pengaturan jembatan IPC yang aman.
 - [x] Dokumentasi awal dan pengaturan repositori GitHub.
 
-### 🟡 Tonggak Sejarah 2: Mesin Multi-Protokol (Tertunda)
-- [ ] Sinkronisasi folder penuh IMAP dengan dukungan IDLE.
-- [ ] Logika POP3 "Unduh & Hapus" / "Biarkan salinan di server".
-- [ ] Penanganan email keluar SMTP yang aman.
-- [ ] Sinkronisasi inkremental (header terlebih dahulu, badan email sesuai permintaan).
+### 🟢 Tonggak Sejarah 2: Mesin Multi-Protokol (Selesai)
+- [x] Sinkronisasi folder penuh IMAP dengan dukungan IDLE.
+- [x] Logika POP3 "Unduh & Hapus" / "Biarkan salinan di server".
+- [x] Penanganan email keluar SMTP yang aman.
+- [x] Sinkronisasi inkremental (header terlebih dahulu, badan email sesuai permintaan).
 
 ### 🟡 Tonggak Sejarah 3: UI/UX (Tata Letak 3 Panel) (Tertunda)
 - [ ] Navigasi Folder & Akun (Panel 1).
