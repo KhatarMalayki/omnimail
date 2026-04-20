@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { ipcMain, safeStorage } from 'electron';
 import db from './db';
 import { syncImapFolders, fetchMessageBody } from './imap';
 import { syncPop3 } from './pop3';
@@ -7,10 +7,15 @@ import { sendEmail } from './smtp';
 export function setupIpcHandlers() {
   // Accounts
   ipcMain.handle('add-account', (_, data) => {
-    const stmt = db.prepare(`
+    let encryptedPassword = data.password;
+    if (safeStorage.isEncryptionAvailable()) {
+      encryptedPassword = safeStorage.encryptString(data.password).toString('base64');
+    }
+
+    const stmt = db.prepare(\`
       INSERT INTO accounts (email, display_name, protocol, host, port, secure, username, password, smtp_host, smtp_port, smtp_secure)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    \`);
     const result = stmt.run(
       data.email,
       data.displayName,
@@ -19,7 +24,7 @@ export function setupIpcHandlers() {
       data.port,
       data.secure ? 1 : 0,
       data.username,
-      data.password,
+      encryptedPassword,
       data.smtpHost,
       data.smtpPort,
       data.smtpSecure ? 1 : 0
@@ -28,7 +33,17 @@ export function setupIpcHandlers() {
   });
 
   ipcMain.handle('get-accounts', () => {
-    return db.prepare('SELECT * FROM accounts').all();
+    const accounts = db.prepare('SELECT * FROM accounts').all() as any[];
+    return accounts.map(account => {
+      if (safeStorage.isEncryptionAvailable()) {
+        try {
+          account.password = safeStorage.decryptString(Buffer.from(account.password, 'base64'));
+        } catch (e) {
+          console.error('Failed to decrypt password for account:', account.email);
+        }
+      }
+      return account;
+    });
   });
 
   ipcMain.handle('delete-account', (_, id) => {
@@ -53,9 +68,9 @@ export function setupIpcHandlers() {
 
   // Messages
   ipcMain.handle('get-messages', (_, folderId, limit = 50, offset = 0) => {
-    return db.prepare(`
+    return db.prepare(\`
       SELECT * FROM messages WHERE folder_id = ? ORDER BY date DESC LIMIT ? OFFSET ?
-    `).all(folderId, limit, offset);
+    \`).all(folderId, limit, offset);
   });
 
   ipcMain.handle('get-message', (_, messageId) => {

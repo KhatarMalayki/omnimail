@@ -1,10 +1,24 @@
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
+import { safeStorage } from 'electron';
 import db from './db';
 
-export async function syncImapFolders(accountId: number) {
+function getDecryptedAccount(accountId: number) {
   const account = db.prepare('SELECT * FROM accounts WHERE id = ?').get(accountId) as any;
   if (!account) throw new Error('Account not found');
+
+  if (safeStorage.isEncryptionAvailable()) {
+    try {
+      account.password = safeStorage.decryptString(Buffer.from(account.password, 'base64'));
+    } catch (e) {
+      console.error('Failed to decrypt password for account:', account.email);
+    }
+  }
+  return account;
+}
+
+export async function syncImapFolders(accountId: number) {
+  const account = getDecryptedAccount(accountId);
 
   const client = new ImapFlow({
     host: account.host,
@@ -21,14 +35,14 @@ export async function syncImapFolders(accountId: number) {
   try {
     const list = await client.list();
     for (const folder of list) {
-      const result = db.prepare(`
+      const result = db.prepare(\`
         INSERT INTO folders (account_id, name, path, attributes)
         VALUES (?, ?, ?, ?)
         ON CONFLICT(account_id, path) DO UPDATE SET
           name = excluded.name,
           attributes = excluded.attributes
         RETURNING id
-      `).get(
+      \`).get(
         accountId,
         folder.name,
         folder.path,
@@ -43,7 +57,7 @@ export async function syncImapFolders(accountId: number) {
 }
 
 export async function startIdle(accountId: number, folderPath: string) {
-  const account = db.prepare('SELECT * FROM accounts WHERE id = ?').get(accountId) as any;
+  const account = getDecryptedAccount(accountId);
   const client = new ImapFlow({
     host: account.host,
     port: account.port,
@@ -75,14 +89,14 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
       size: true,
       envelope: true
     })) {
-      db.prepare(`
+      db.prepare(\`
         INSERT INTO messages (
           folder_id, uid, message_id, subject, from_name, from_address,
           to_address, date, is_read, size
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(folder_id, uid) DO UPDATE SET
           is_read = excluded.is_read
-      `).run(
+      \`).run(
         folderId,
         msg.uid,
         msg.envelope.messageId,
@@ -91,7 +105,7 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
         msg.envelope.from[0]?.address,
         msg.envelope.to[0]?.address,
         msg.envelope.date?.toISOString(),
-        msg.flags.has('\\Seen') ? 1 : 0,
+        msg.flags.has('\\\\Seen') ? 1 : 0,
         msg.size
       );
     }
@@ -101,7 +115,7 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
 }
 
 export async function fetchMessageBody(accountId: number, folderPath: string, uid: number) {
-  const account = db.prepare('SELECT * FROM accounts WHERE id = ?').get(accountId) as any;
+  const account = getDecryptedAccount(accountId);
   const client = new ImapFlow({
     host: account.host,
     port: account.port,
@@ -116,14 +130,14 @@ export async function fetchMessageBody(accountId: number, folderPath: string, ui
     const msg = await client.fetchOne(uid.toString(), { source: true }, { uid: true });
     if (msg && msg.source) {
       const parsed = await simpleParser(msg.source);
-      db.prepare(`
+      db.prepare(\`
         UPDATE messages SET
           body_html = ?,
           body_text = ?,
           snippet = ?
         WHERE folder_id IN (SELECT id FROM folders WHERE account_id = ? AND path = ?)
         AND uid = ?
-      `).run(
+      \`).run(
         parsed.html || '',
         parsed.text || '',
         parsed.textAsHtml?.substring(0, 100),

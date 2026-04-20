@@ -1,10 +1,24 @@
 import POP3Client from 'poplib';
 import { simpleParser } from 'mailparser';
+import { safeStorage } from 'electron';
 import db from './db';
 
-export async function syncPop3(accountId: number, keepCopy: boolean = true) {
+function getDecryptedAccount(accountId: number) {
   const account = db.prepare('SELECT * FROM accounts WHERE id = ?').get(accountId) as any;
   if (!account) throw new Error('Account not found');
+
+  if (safeStorage.isEncryptionAvailable()) {
+    try {
+      account.password = safeStorage.decryptString(Buffer.from(account.password, 'base64'));
+    } catch (e) {
+      console.error('Failed to decrypt password for account:', account.email);
+    }
+  }
+  return account;
+}
+
+export async function syncPop3(accountId: number, keepCopy: boolean = true) {
+  const account = getDecryptedAccount(accountId);
 
   const client = new POP3Client(account.port, account.host, {
     tlserrs: false,
@@ -40,7 +54,7 @@ export async function syncPop3(accountId: number, keepCopy: boolean = true) {
       client.once('retr', async (status, msgnumber, data) => {
         if (status) {
           const parsed = await simpleParser(data);
-          const uid = parsed.messageId || `pop3-${accountId}-${msgnumber}-${parsed.date?.getTime()}`;
+          const uid = parsed.messageId || \`pop3-\${accountId}-\${msgnumber}-\${parsed.date?.getTime()}\`;
           
           const exists = db.prepare('SELECT 1 FROM pop3_uids WHERE account_id = ? AND uid = ?').get(accountId, uid);
           
@@ -48,12 +62,12 @@ export async function syncPop3(accountId: number, keepCopy: boolean = true) {
             const folder = db.prepare('SELECT id FROM folders WHERE account_id = ? AND name = "INBOX"').get(accountId) as { id: number };
             const folderId = folder?.id || db.prepare('INSERT INTO folders (account_id, name, path) VALUES (?, "INBOX", "INBOX") RETURNING id').get(accountId).id;
 
-            db.prepare(`
+            db.prepare(\`
               INSERT INTO messages (
                 folder_id, uid, message_id, subject, from_name, from_address,
                 to_address, date, snippet, body_html, body_text, size
               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `).run(
+            \`).run(
               folderId,
               msgnumber,
               parsed.messageId,
