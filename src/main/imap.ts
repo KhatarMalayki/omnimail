@@ -2,6 +2,7 @@ import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { safeStorage } from 'electron';
 import db from './db';
+import { saveAttachmentLocally } from './attachments';
 
 function getDecryptedAccount(accountId: number) {
   const account = db.prepare('SELECT * FROM accounts WHERE id = ?').get(accountId) as any;
@@ -130,21 +131,36 @@ export async function fetchMessageBody(accountId: number, folderPath: string, ui
     const msg = await client.fetchOne(uid.toString(), { source: true }, { uid: true });
     if (msg && msg.source) {
       const parsed = await simpleParser(msg.source);
-      db.prepare(\`
-        UPDATE messages SET
-          body_html = ?,
-          body_text = ?,
-          snippet = ?
-        WHERE folder_id IN (SELECT id FROM folders WHERE account_id = ? AND path = ?)
-        AND uid = ?
-      \`).run(
-        parsed.html || '',
-        parsed.text || '',
-        parsed.textAsHtml?.substring(0, 100),
-        accountId,
-        folderPath,
-        uid
-      );
+      
+      // Get message ID from DB
+      const dbMsg = db.prepare('SELECT id FROM messages WHERE folder_id IN (SELECT id FROM folders WHERE account_id = ? AND path = ?) AND uid = ?').get(accountId, folderPath, uid) as { id: number };
+      
+      if (dbMsg) {
+        // Update body
+        db.prepare(\`
+          UPDATE messages SET
+            body_html = ?,
+            body_text = ?,
+            snippet = ?
+          WHERE id = ?
+        \`).run(
+          parsed.html || '',
+          parsed.text || '',
+          parsed.textAsHtml?.substring(0, 100),
+          dbMsg.id
+        );
+
+        // Save attachments
+        for (const att of parsed.attachments) {
+          saveAttachmentLocally(
+            dbMsg.id,
+            att.filename || 'unnamed',
+            att.contentType,
+            att.size,
+            att.content
+          );
+        }
+      }
     }
   } finally {
     lock.release();

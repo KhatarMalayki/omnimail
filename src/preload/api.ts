@@ -33,6 +33,11 @@ const api = {
   startIdle: (accountId: number, folderPath: string) =>
     ipcRenderer.invoke('start-idle', accountId, folderPath),
   stopIdle: (accountId: number) => ipcRenderer.invoke('stop-idle', accountId),
+ 
+  // Attachments
+  getAttachments: (messageId: number) => ipcRenderer.invoke('get-attachments', messageId),
+  downloadAttachment: (attachmentId: number) => ipcRenderer.invoke('download-attachment', attachmentId),
+  openAttachment: (localPath: string) => ipcRenderer.invoke('open-attachment', localPath),
 
   // Listeners
   onMessageReceived: (callback: (data: any) => void) => {

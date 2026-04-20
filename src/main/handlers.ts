@@ -3,8 +3,10 @@ import db from './db';
 import { syncImapFolders, fetchMessageBody } from './imap';
 import { syncPop3 } from './pop3';
 import { sendEmail } from './smtp';
+import { setupAttachmentHandlers } from './attachments';
 
 export function setupIpcHandlers() {
+  setupAttachmentHandlers();
   // Accounts
   ipcMain.handle('add-account', (_, data) => {
     let encryptedPassword = data.password;
