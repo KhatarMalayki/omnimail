@@ -7,6 +7,9 @@ const db = new Database(dbPath);
 
 export function initDatabase() {
   db.pragma('journal_mode = WAL');
+  db.pragma('synchronous = NORMAL');
+  db.pragma('temp_store = MEMORY');
+  db.pragma('cache_size = -2000'); // ~2MB cache
 
   // Accounts table
   db.exec(`
@@ -44,6 +47,7 @@ export function initDatabase() {
       UNIQUE(account_id, path)
     )
   `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_folders_account_id ON folders(account_id)`);
 
   // Messages table
   db.exec(`
@@ -68,6 +72,8 @@ export function initDatabase() {
       UNIQUE(folder_id, uid)
     )
   `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_folder_id ON messages(folder_id)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_messages_date ON messages(date DESC)`);
 
   // FTS5 Virtual Table for searching
   db.exec(`
@@ -115,6 +121,7 @@ export function initDatabase() {
       FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
     )
   `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_attachments_message_id ON attachments(message_id)`);
 
   // POP3 UID Tracker
   db.exec(`
@@ -127,7 +134,7 @@ export function initDatabase() {
     )
   `);
 
-  console.log('Database initialized with FTS5 at:', dbPath);
+  console.log('Database initialized with performance optimizations at:', dbPath);
 }
 
 export default db;
