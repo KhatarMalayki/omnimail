@@ -60,7 +60,7 @@ export async function syncImapFolders(accountId: number) {
         accountId,
         folder.name,
         folder.path,
-        JSON.stringify(Array.from(folder.attributes))
+        JSON.stringify(Array.from((folder as any).attributes || []))
       ) as { id: number };
 
       await syncImapMessages(client, result.id, folder.path);
