@@ -1,5 +1,5 @@
 import POP3Client from 'poplib';
-import { simpleParser } from 'mailparser';
+import { simpleParser, AddressObject } from 'mailparser';
 import { safeStorage } from 'electron';
 import db from './db';
 
@@ -31,7 +31,7 @@ export async function syncPop3(accountId: number, keepCopy: boolean = true) {
       client.login(account.username, account.password);
     });
 
-    client.on('login', (status, rawdata) => {
+    client.on('login', (status: boolean, rawdata: string) => {
       if (status) {
         client.list();
       } else {
@@ -39,7 +39,7 @@ export async function syncPop3(accountId: number, keepCopy: boolean = true) {
       }
     });
 
-    client.on('list', (status, msgcount, msgnumber, data) => {
+    client.on('list', (status: boolean, msgcount: number) => {
       if (status) {
         if (msgcount > 0) {
           fetchNext(1, msgcount);
@@ -51,7 +51,7 @@ export async function syncPop3(accountId: number, keepCopy: boolean = true) {
 
     async function fetchNext(current: number, total: number) {
       client.retr(current);
-      client.once('retr', async (status, msgnumber, data) => {
+      client.once('retr', async (status: boolean, msgnumber: number, data: string) => {
         if (status) {
           const parsed = await simpleParser(data);
           const uid = parsed.messageId || `pop3-${accountId}-${msgnumber}-${parsed.date?.getTime()}`;
@@ -61,6 +61,9 @@ export async function syncPop3(accountId: number, keepCopy: boolean = true) {
           if (!exists) {
             const folder = db.prepare('SELECT id FROM folders WHERE account_id = ? AND name = "INBOX"').get(accountId) as { id: number };
             const folderId = folder?.id || (db.prepare('INSERT INTO folders (account_id, name, path) VALUES (?, "INBOX", "INBOX") RETURNING id').get(accountId) as { id: number }).id;
+
+            const from = parsed.from && 'value' in parsed.from ? (parsed.from as AddressObject).value[0] : null;
+            const to = parsed.to && 'value' in parsed.to ? (parsed.to as AddressObject).value[0] : null;
 
             db.prepare(`
               INSERT INTO messages (
@@ -72,11 +75,11 @@ export async function syncPop3(accountId: number, keepCopy: boolean = true) {
               msgnumber,
               parsed.messageId,
               parsed.subject,
-              parsed.from?.value[0]?.name,
-              parsed.from?.value[0]?.address,
-              parsed.to?.value[0]?.address,
-              parsed.date?.toISOString(),
-              parsed.textAsHtml?.substring(0, 100),
+              from?.name || '',
+              from?.address || '',
+              to?.address || '',
+              parsed.date?.toISOString() || new Date().toISOString(),
+              parsed.textAsHtml ? parsed.textAsHtml.substring(0, 100) : '',
               parsed.html || '',
               parsed.text || '',
               data.length
@@ -98,11 +101,11 @@ export async function syncPop3(accountId: number, keepCopy: boolean = true) {
       });
     }
 
-    client.on('quit', (status) => {
+    client.on('quit', (status: boolean) => {
       resolve(status);
     });
 
-    client.on('error', (err) => {
+    client.on('error', (err: Error) => {
       reject(err);
     });
   });
