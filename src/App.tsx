@@ -3,7 +3,8 @@ import { Sidebar } from './renderer/src/components/Sidebar'
 import { MessageList } from './renderer/src/components/MessageList'
 import { ReaderView } from './renderer/src/components/ReaderView'
 import { ComposeModal } from './renderer/src/components/ComposeModal'
-import { Mail } from 'lucide-react'
+import { SettingsModal } from './renderer/src/components/SettingsModal'
+import { Mail, Settings as SettingsIcon } from 'lucide-react'
 import './App.css'
 
 interface Message {
@@ -26,6 +27,7 @@ function App() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
   const [searchResults, setSearchResults] = useState<Message[] | null>(null)
   const [isComposeOpen, setIsComposeOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const handleSelectFolder = (folderId: number, accountId: number, folderPath: string) => {
     setSelectedFolderId(folderId)
@@ -53,10 +55,18 @@ function App() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 shadow-sm">
-        <Mail size={24} className="text-blue-600" />
-        <h1 className="text-2xl font-bold text-gray-900">OmniMail</h1>
+    <div className="h-screen flex flex-col bg-gray-100 dark:bg-gray-950 transition-colors">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <Mail size={24} className="text-blue-600" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">OmniMail</h1>
+        </div>
+        <button 
+          onClick={() => setIsSettingsOpen(true)}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors dark:text-gray-400"
+        >
+          <SettingsIcon size={20} />
+        </button>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
@@ -76,6 +86,11 @@ function App() {
         onSent={() => {
           setSelectedMessage(null)
         }}
+      />
+
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
       />
     </div>
   )
