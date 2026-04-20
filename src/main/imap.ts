@@ -60,7 +60,7 @@ export async function syncImapFolders(accountId: number) {
         accountId,
         folder.name,
         folder.path,
-        JSON.stringify(folder.attributes)
+        JSON.stringify(Array.from(folder.attributes))
       ) as { id: number };
 
       await syncImapMessages(client, result.id, folder.path);
@@ -103,6 +103,9 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
       size: true,
       envelope: true
     })) {
+      const from = msg.envelope.from && msg.envelope.from.length > 0 ? msg.envelope.from[0] : null;
+      const to = msg.envelope.to && msg.envelope.to.length > 0 ? msg.envelope.to[0] : null;
+
       const isNew = db.prepare(`
         INSERT INTO messages (
           folder_id, uid, message_id, subject, from_name, from_address,
@@ -116,10 +119,10 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
         msg.uid,
         msg.envelope.messageId,
         msg.envelope.subject,
-        msg.envelope.from[0]?.name,
-        msg.envelope.from[0]?.address,
-        msg.envelope.to[0]?.address,
-        msg.envelope.date?.toISOString(),
+        from?.name || '',
+        from?.address || '',
+        to?.address || '',
+        msg.envelope.date ? msg.envelope.date.toISOString() : new Date().toISOString(),
         msg.flags.has('\\Seen') ? 1 : 0,
         msg.size
       ) as { id: number };
@@ -127,7 +130,7 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
       if (notify && isNew && !msg.flags.has('\\Seen')) {
         showNewEmailNotification(
           msg.envelope.subject || '(No Subject)',
-          msg.envelope.from[0]?.name || msg.envelope.from[0]?.address || 'Unknown',
+          from?.name || from?.address || 'Unknown',
           isNew.id
         );
       }
@@ -168,19 +171,21 @@ export async function fetchMessageBody(accountId: number, folderPath: string, ui
         `).run(
           parsed.html || '',
           parsed.text || '',
-          parsed.textAsHtml?.substring(0, 100),
+          parsed.textAsHtml ? parsed.textAsHtml.substring(0, 100) : '',
           dbMsg.id
         );
 
         // Save attachments
-        for (const att of parsed.attachments) {
-          saveAttachmentLocally(
-            dbMsg.id,
-            att.filename || 'unnamed',
-            att.contentType,
-            att.size,
-            att.content
-          );
+        if (parsed.attachments) {
+          for (const att of parsed.attachments) {
+            saveAttachmentLocally(
+              dbMsg.id,
+              att.filename || 'unnamed',
+              att.contentType,
+              att.size,
+              att.content
+            );
+          }
         }
       }
     }
