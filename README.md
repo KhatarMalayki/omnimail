@@ -32,10 +32,12 @@ OmniMail adalah klien email desktop lintas platform tingkat profesional yang ter
 - [x] Daftar Email yang dapat digulir dengan cuplikan (Panel 2).
 - [x] Panel Baca iframe yang di-sandbox untuk rendering HTML yang aman (Panel 3).
 
-### 🟡 Tonggak Sejarah 4: Keamanan & Pencarian (Tertunda)
-- [ ] Pencarian teks lengkap di seluruh cache lokal.
-- [ ] Penyimpanan kredensial yang aman.
-- [ ] Manajemen lampiran dan caching lokal.
+### 🟢 Tonggak Sejarah 4: Keamanan, Pencarian & Lampiran (Selesai)
+- [x] Penyimpanan kredensial yang aman menggunakan `electron.safeStorage`.
+- [x] Manajemen lampiran dan caching lokal otomatis.
+- [x] Pencarian teks lengkap (FTS5) di seluruh cache lokal dengan sinkronisasi otomatis.
+- [x] UI Pencarian Global dengan hasil waktu nyata.
+- [x] Daftar lampiran dan integrasi pembukaan file lokal di Reader View.
 
 ## 🛠️ Petunjuk Penyiapan
 
@@ -46,8 +48,8 @@ OmniMail adalah klien email desktop lintas platform tingkat profesional yang ter
 ### Instalasi
 ```bash
 # Kloning repositori
-git clone https://github.com/KhatarMalayki/Dwirusdianto.git OmniMail
-cd OmniMail
+git clone https://github.com/KhatarMalayki/omnimail.git
+cd omnimail
 
 # Instal dependensi
 pnpm install
@@ -66,7 +68,7 @@ pnpm run build
 ```
 
 ## 🔒 Keamanan
-OmniMail menggunakan jembatan IPC yang aman antara proses Utama Electron dan Renderer. Semua logika protokol dan kredensial sensitif tetap berada di proses Utama, terisolasi dari lapisan UI. Email HTML dirender dalam iframe yang di-sandbox untuk mencegah eksekusi skrip dan pelacakan lintas situs.
+OmniMail menggunakan jembatan IPC yang aman antara proses Utama Electron dan Renderer. Semua logika protokol dan kredensial sensitif tetap berada di proses Utama, terisolasi dari lapisan UI. Kredensial akun dienkripsi menggunakan kunci asli sistem operasi melalui API `safeStorage` Electron. Email HTML dirender dalam iframe yang di-sandbox untuk mencegah eksekusi skrip dan pelacakan lintas situs.
 
 ---
 *Dibuat oleh Tim OmniMail*
