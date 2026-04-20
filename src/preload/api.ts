@@ -13,6 +13,7 @@ const api = {
   // Messages
   getMessages: (folderId: number, limit?: number, offset?: number) =>
     ipcRenderer.invoke('get-messages', folderId, limit, offset),
+  searchMessages: (query: string) => ipcRenderer.invoke('search-messages', query),
   getMessage: (messageId: number) => ipcRenderer.invoke('get-message', messageId),
   fetchMessageBody: (accountId: number, folderPath: string, uid: number) =>
     ipcRenderer.invoke('fetch-message-body', accountId, folderPath, uid),

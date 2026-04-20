@@ -29,7 +29,7 @@ function App() {
   const [isComposeOpen, setIsComposeOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
-  const handleSelectFolder = (folderId: number, accountId: number, folderPath: string) => {
+  const handleSelectFolder = (folderId: number, accountId: number, _folderPath: string) => {
     setSelectedFolderId(folderId)
     setSelectedAccountId(accountId)
     setSelectedMessage(null)
