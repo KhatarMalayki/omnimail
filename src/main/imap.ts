@@ -49,16 +49,15 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
       uid: true,
       flags: true,
       size: true,
-      envelope: true,
-      source: true
+      envelope: true
     })) {
-      const parsed = await simpleParser(msg.source);
       db.prepare(`
         INSERT INTO messages (
           folder_id, uid, message_id, subject, from_name, from_address,
-          to_address, date, snippet, body_html, body_text, is_read, size
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(folder_id, uid) DO NOTHING
+          to_address, date, is_read, size
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(folder_id, uid) DO UPDATE SET
+          is_read = excluded.is_read
       `).run(
         folderId,
         msg.uid,
@@ -68,14 +67,49 @@ async function syncImapMessages(client: ImapFlow, folderId: number, path: string
         msg.envelope.from[0]?.address,
         msg.envelope.to[0]?.address,
         msg.envelope.date?.toISOString(),
-        parsed.textAsHtml?.substring(0, 100),
-        parsed.html || '',
-        parsed.text || '',
         msg.flags.has('\\Seen') ? 1 : 0,
         msg.size
       );
     }
   } finally {
     lock.release();
+  }
+}
+
+export async function fetchMessageBody(accountId: number, folderPath: string, uid: number) {
+  const account = db.prepare('SELECT * FROM accounts WHERE id = ?').get(accountId) as any;
+  const client = new ImapFlow({
+    host: account.host,
+    port: account.port,
+    secure: account.secure === 1,
+    auth: { user: account.username, pass: account.password },
+    logger: false
+  });
+
+  await client.connect();
+  const lock = await client.getMailboxLock(folderPath);
+  try {
+    const msg = await client.fetchOne(uid.toString(), { source: true }, { uid: true });
+    if (msg && msg.source) {
+      const parsed = await simpleParser(msg.source);
+      db.prepare(`
+        UPDATE messages SET
+          body_html = ?,
+          body_text = ?,
+          snippet = ?
+        WHERE folder_id IN (SELECT id FROM folders WHERE account_id = ? AND path = ?)
+        AND uid = ?
+      `).run(
+        parsed.html || '',
+        parsed.text || '',
+        parsed.textAsHtml?.substring(0, 100),
+        accountId,
+        folderPath,
+        uid
+      );
+    }
+  } finally {
+    lock.release();
+    await client.logout();
   }
 }
