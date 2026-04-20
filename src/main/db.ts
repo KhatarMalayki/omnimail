@@ -40,7 +40,8 @@ export function initDatabase() {
       uid_validity INTEGER,
       unread_count INTEGER DEFAULT 0,
       total_count INTEGER DEFAULT 0,
-      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+      UNIQUE(account_id, path)
     )
   `);
 
