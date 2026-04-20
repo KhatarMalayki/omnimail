@@ -42,6 +42,30 @@ export async function syncImapFolders(accountId: number) {
   }
 }
 
+export async function startIdle(accountId: number, folderPath: string) {
+  const account = db.prepare('SELECT * FROM accounts WHERE id = ?').get(accountId) as any;
+  const client = new ImapFlow({
+    host: account.host,
+    port: account.port,
+    secure: account.secure === 1,
+    auth: { user: account.username, pass: account.password },
+    logger: false
+  });
+
+  await client.connect();
+  const lock = await client.getMailboxLock(folderPath);
+  
+  client.on('exists', async (data) => {
+    const folder = db.prepare('SELECT id FROM folders WHERE account_id = ? AND path = ?').get(accountId, folderPath) as { id: number };
+    if (folder) {
+      await syncImapMessages(client, folder.id, folderPath);
+    }
+  });
+
+  // Keep connection alive
+  return { client, lock };
+}
+
 async function syncImapMessages(client: ImapFlow, folderId: number, path: string) {
   const lock = await client.getMailboxLock(path);
   try {
